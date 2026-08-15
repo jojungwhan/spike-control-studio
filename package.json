@@ -1,0 +1,25 @@
+{
+  "name": "spike-control-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser-based control platform for LEGO SPIKE Prime hubs running Pybricks",
+  "packageManager": "pnpm@11.1.3",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "gen:vectors": "pnpm --filter @spike/safety-kernel gen:vectors",
+    "test:py": "cd apps/bridge && uv run pytest",
+    "verify": "pnpm build && pnpm typecheck && pnpm test && pnpm test:py"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

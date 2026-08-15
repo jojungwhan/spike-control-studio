@@ -1,0 +1,22 @@
+node_modules/
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Local
+.env
+.env.local
+*.log
