@@ -1,8 +1,8 @@
 # Port registry
 
-This project shares a machine with the CIT stack, whose canonical registry is
-`<workspace>/PORTS.md` (8000, 5174, 3000, 8787, 5173, 8765, 8797 are taken there).
-Verify a port is free on both lists before claiming it.
+Every port this project binds is listed here. If the machine also runs unrelated
+services, check their registry too before claiming a new one — these defaults are
+deliberately in a high, uncommon range for that reason.
 
 | Service | Port | Bind | Pinned in |
 |---------|------|------|-----------|

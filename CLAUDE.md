@@ -1,7 +1,7 @@
 # SPIKE Control Studio — Claude Code Instructions
 
 Browser-based control platform for LEGO SPIKE Prime hubs running Pybricks firmware.
-Full plan: `<home>/.claude/plans/misty-bubbling-snail.md`.
+Roadmap beyond MVP 1: `docs/multi-generation-plan.md`.
 
 ## The architecture in one paragraph
 
@@ -102,9 +102,9 @@ If you change the generator and that guard fails, the generator is wrong, not th
 
 ## Ports
 
-See `docs/PORTS.md`. This machine also runs the CIT stack — check
-`<workspace>/PORTS.md` before claiming a new port.
+See `docs/PORTS.md`, and check whatever else the machine runs before claiming a new port.
 
 ## Scratch
 
-`<home>/scratch/spike-control-studio/`. Never `/tmp` — it is tmpfs (RAM) on this box.
+Write scratch files to a real disk under the developer's home, not to `/tmp` — it is tmpfs (RAM) on
+some machines, and a few hundred MB of build artifacts left there is resident memory.

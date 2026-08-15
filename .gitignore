@@ -21,6 +21,12 @@ blob-report/
 .env.local
 *.log
 
+# Host-specific: where a given operator publishes is not a property of this
+# project, and a live hostname does not belong in a public repository.
+deploy/publish.env
+deploy/LOCAL.md
+/HANDOFF.md
+
 # uv (the lockfile IS committed: this is an application, not a library)
 apps/bridge/.venv/
 .hypothesis/
