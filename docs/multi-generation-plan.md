@@ -156,40 +156,138 @@ The rule this implies: **remote operation over the internet should require
 better line than restricting power or hiding features, and it matches the PRD's
 existing stance of informing rather than blocking.
 
-## 5. Sequencing
+## 5. Hardware verdicts (verified against primary sources, 2026-08-16)
+
+| Generation | Verdict | Transport that actually works | Library |
+|---|---|---|---|
+| SPIKE Prime 45678 | shipping | BLE Pybricks GATT | ours |
+| Robot Inventor 51515 | **works today, zero code** | identical BLE GATT, identical firmware image | ours, unchanged |
+| EV3, stock firmware | **the safe EV3 bet** | USB HID `0694:0005` · BT RFCOMM ch 1 · Wi-Fi UDP 3015 | `ev3-dc` |
+| NXT, stock firmware | **works** | USB (pyusb) · BT RFCOMM ch 1 | `nxt-python` 3.5.1 + small stdlib-socket shim |
+| EV3 / NXT + Pybricks fw | needs work, and the protocol is moving | **USB only** — no BLE at all | `pybricksdev` 2.3.2, pinned to fw 4.0.1 |
+| RCX | **cut it** | kernel `legousbtower` char device | nothing in Python |
+
+### What the brief got wrong
+
+**"Pybricks EV3 exposes the same BLE stdio tunnel" — false, and it is the
+load-bearing error.** The EV3 platform config compiles in *zero* LE hosts
+(`PBDRV_CONFIG_BLUETOOTH_BTSTACK_NUM_LE_HOSTS (0)`); its Classic stack does
+inquiry scanning and nothing resembling an RFCOMM host channel. NXT is worse:
+`PBDRV_CONFIG_BLUETOOTH (0)` — Bluetooth is compiled out entirely. Under
+Pybricks, EV3 and NXT are **USB-only devices**. Any `PybricksBleAdapter(EV3)` in
+the design should be deleted before it is written.
+
+**The Pybricks USB protocol is in flux right now.** Firmware ≤ 4.0.x speaks a
+vendor-class USB interface (reachable by pyusb and WebUSB). Firmware 4.1.0b1
+(2026-07-13) switched to CDC-ACM plus COBS framing — the hub appears as
+`/dev/ttyACM0` and the host uses Web Serial. `pybricksdev` on PyPI (2.3.2,
+2026-01-24) predates the switch and does not speak the new form. Pick one lane
+and pin the firmware; do not straddle both in a first version.
+
+**EV3 in Pybricks is understated, not overstated** — it is in *stable* 4.0.0/4.0.1,
+not betas. But mailboxes, `speaker.say()`, filesystem access, `hub_menu` and hub
+names do not exist there yet, and the EV3 hub docs page is a 404.
+
+**ev3dev is not a viable base.** Last OS image April 2020 (Debian 9, EOL), no
+news since July 2020, and Pybricks *removed* its ev3dev support in 4.0.0.
+Recommending a 2020 Debian 9 SD card to schools in 2026 is a support liability.
+
+**`legousbtower` was not removed from the kernel** — it got a use-after-free fix
+in June 2026 and is a loadable module on this very machine. The driver is alive;
+the *ecosystem* is dead. There is no Python library, only `nqc` as a subprocess.
+
+**Do not use PyBluez** (0.23, 2019, and nxt-python's own docs warn the PyPI build
+does not work with it). `socket.AF_BLUETOOTH` / `BTPROTO_RFCOMM` are in the
+standard library and present on this box.
+
+### Two findings that change the existing MVP 1 plan
+
+**1. Web Bluetooth on Linux is flag-gated, which inverts the platform story.**
+Chrome's Linux Web Bluetooth is "partially implemented and not supported" and
+needs `chrome://flags/#enable-experimental-web-platform-features`. So the
+zero-install browser path this product is built around does not work on a Linux
+laptop or a Raspberry Pi without a flag — exactly the classroom and Pi cases in
+the PRD. The consequence is genuinely counter-intuitive: once EV3 support lands,
+**EV3 over Web Serial is more classroom-robust on Linux than SPIKE over Web
+Bluetooth**. The bridge, not the browser, is the first-class Linux path, and the
+setup docs should route Linux users there rather than to a chrome flag.
+
+**2. Newly bought SPIKE hubs may not take the firmware version we pinned.**
+Pybricks 4.1.0b1 added support for "a version of SPIKE Prime with slightly
+updated electronics"; the 4.1.0b2 bundle ships two images, `prime_hub_f4` and
+`prime_hub_h5`. A recently purchased hub may be the STM32H5 revision and require
+the 4.1 **beta** line — while `docs/hardware-setup.md` currently pins 4.0.1.
+**Check the hub revision before flashing at M7**, and be ready to pin 4.1 beta
+instead.
+
+## 6. Sequencing
 
 **Phase 0 — channel generalization (prerequisite).** Section 2. No new hardware.
-Ends with `formatVersion: 2` vectors, both kernels passing, six-port SPIKE
-support in the UI.
+Ends with `formatVersion: 2` vectors, both kernels passing, and SPIKE's six ports
+actually usable, which MVP 1 does not deliver today.
 
-**Phase 1 — Robot Inventor 51515.** If the research confirms it is the same hub
-to Pybricks, this is a product-identity change and not an adapter: hub naming,
-default port suggestions, templates, imagery, setup copy. Cheap, and it doubles
-the addressable hardware.
+**Phase 1 — Robot Inventor 51515. Ship it now; it is documentation.** Pybricks
+publishes one `pybricks-primehub-*.zip` covering both hubs, and its docs say the
+hubs are "completely identical... They use the same Pybricks firmware." Same GATT,
+same stdio tunnel, same adapter. What changes is naming, default port
+suggestions, templates and setup copy. The kit differs (51515 ships four medium
+motors, no large motor, no force sensor) so the profile defaults should differ.
+One caveat for later: if a USB path is ever added, the USB PIDs are *not* the
+same (`0x0009` vs `0x0010`) — filter on the Pybricks interface class rather than
+hardcoding a PID.
 
-**Phase 2 — EV3.** The real prize for schools, and the one that most needs a
-resident agent so it can reach `hub+host`. Adapter selection depends on the
-research verdict below.
+**Phase 2 — stock-firmware EV3 and NXT via direct commands.** This is the
+reordering the research argues for, and I agree with it. Two working generations
+in days rather than weeks, no firmware flashing, no dependence on a protocol that
+moved six weeks ago, and it is the path that survives if Pybricks' EV3 support
+churns. LEGO's EV3 Communication Developer Kit is still the reference and the
+command set is frozen. Both land at `host` enforcement only, so both are local
+supervised driving until Phase 4.
 
-**Phase 3 — NXT.** Bridge-only. Direct-command adapter first for setup and
-diagnostics; resident agent for anything unsupervised.
+**Phase 3 — Pybricks EV3/NXT over USB.** Pin firmware 4.0.1 and `pybricksdev`
+2.3.2, build against the vendor-class path, and treat the 4.1 CDC/COBS switch as
+a tracked migration (a small `pyserial` + COBS codec) once the format settles.
+The payoff is that a Pybricks brick can run our resident agent, which is what
+lifts EV3 and NXT from `host` to `hub+host`.
 
-**Phase 4 — RCX.** Only if the research says the tower is still practical. Label
-it a legacy lab, cap expectations in the UI, and never advertise
-internet driving on it.
+**Phase 4 — resident agents for EV3/NXT**, unlocking remote operation on those
+generations.
 
----
+**RCX — cut.** The kernel driver is alive, but there is no Python library, and
+more fundamentally it does not fit the abstraction: this platform is built on a
+host holding a live bidirectional stdio tunnel, and RCX offers program download
+plus a few IR opcodes over half-duplex line-of-sight infrared. If the
+compatibility line matters for marketing, offer "compile and download with `nqc`"
+as an unsupported lab activity, not a platform adapter.
 
-## 6. Hardware verdicts
+## 7. Structure this implies
 
-Pending verification. The brief's claims about EV3-in-Pybricks-4.x, a Pybricks
-NXT firmware artifact, ev3dev's current health, and the RCX USB tower on modern
-Linux all need checking against primary sources before any of them turns into a
-milestone. This section gets filled in with a per-generation
-SUPPORTED-NOW / NEEDS-WORK / IMPRACTICAL verdict, the specific transport and
-library for each, and a list of claims that did not survive checking.
+Pybricks' USB protocol is a deliberate isomorphism of its BLE GATT profile — same
+message set, same characteristics, payload sized off BLE's MTU. So the Pybricks
+family is one codec with three transports, and the legacy bricks are a genuinely
+different protocol family rather than another transport:
 
-A generation with no verified path gets cut rather than shipped as a broken
-adapter — a control surface that looks like it works and does not is worse than
-one that is absent, and that is doubly true for the ones that cannot hold a
-hub-side watchdog.
+```
+PybricksCodec         commands · events · status · stdin/stdout · capabilities
+   ├── BleTransport         bleak / Web Bluetooth      → SPIKE, Inventor
+   ├── UsbVendorTransport   pyusb / WebUSB             → EV3, NXT, SPIKE @ fw 4.0.x
+   └── UsbSerialTransport   pyserial+COBS / Web Serial → EV3, NXT, SPIKE @ fw 4.1.x
+
+LegacyDirectCommand   a different protocol family, not a Pybricks transport
+   ├── ev3_dc      → stock EV3   (HID · RFCOMM ch1 · UDP 3015)
+   └── nxt-python  → stock NXT   (pyusb · RFCOMM ch1)
+```
+
+Both families sit *below* the safety kernel and neither implements a lease.
+
+**Version-gate everything.** Read the capabilities characteristic and the Device
+Information software revision at connect; the published BLE profile is at v1.4.0
+while firmware `protocol.h` is already at 1.6.0. Note also that stdio moved off
+the Nordic UART Service onto the Pybricks command/event characteristic in profile
+v1.3.0 — anything still touching NUS for stdio breaks on 4.x. Our implementation
+already uses the command/event characteristic, so this is a "do not regress" note.
+
+Two operational notes for the Raspberry Pi target: ship udev rules for both USB
+and tty, and expect `cdc_acm` to claim a CDC-firmware brick before our process
+does.
+

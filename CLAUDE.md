@@ -49,6 +49,20 @@ exist in `SafetyConfig` in the first place.
 This is the single most important hardware fact (pybricks/support#212). Only the hub's own watchdog
 stops motors when the link drops. Never treat "disconnected" as "stopped".
 
+### Check the hub revision before flashing
+
+Pybricks 4.1.0b1 added support for "a version of SPIKE Prime with slightly updated electronics", and
+the 4.1.0b2 bundle ships two images (`prime_hub_f4` and `prime_hub_h5`). A recently purchased hub may
+be the STM32H5 revision, which needs the 4.1 **beta** line rather than the 4.0.1 this project
+otherwise pins. Confirm which revision the hub is before flashing, not after.
+
+### Web Bluetooth does not work on Linux without a flag
+
+Chrome's Linux Web Bluetooth is "partially implemented and not supported" and needs
+`chrome://flags/#enable-experimental-web-platform-features`. On Linux and on a Raspberry Pi the
+bridge is the first-class path, not the browser. Setup docs should route Linux users to the bridge
+and never to a chrome flag.
+
 ### Only real knobs
 
 `SafetyConfig` contains only settings the kernel actually enforces with data MVP 1 has. Do not add a
