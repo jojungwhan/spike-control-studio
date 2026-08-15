@@ -20,3 +20,7 @@ blob-report/
 .env
 .env.local
 *.log
+
+# uv
+apps/bridge/.venv/
+uv.lock
