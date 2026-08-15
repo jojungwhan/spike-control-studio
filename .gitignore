@@ -21,6 +21,6 @@ blob-report/
 .env.local
 *.log
 
-# uv
+# uv (the lockfile IS committed: this is an application, not a library)
 apps/bridge/.venv/
-uv.lock
+.hypothesis/
