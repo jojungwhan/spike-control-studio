@@ -18,6 +18,22 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@26.2.0)
 
+  packages/device-adapters:
+    dependencies:
+      '@spike/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+      '@spike/simulator':
+        specifier: workspace:*
+        version: link:../simulator
+    devDependencies:
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@26.2.0)
+
   packages/protocol:
     dependencies:
       zod:
@@ -49,6 +65,22 @@ importers:
       tsx:
         specifier: ^4.19.2
         version: 4.23.12
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@26.2.0)
+
+  packages/simulator:
+    dependencies:
+      '@spike/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+    devDependencies:
+      fast-check:
+        specifier: ^3.23.2
+        version: 3.23.2
       typescript:
         specifier: ^5.7.2
         version: 5.9.3
