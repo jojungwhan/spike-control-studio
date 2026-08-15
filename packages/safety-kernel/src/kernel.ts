@@ -339,7 +339,14 @@ function applyCommand(
       }
 
       state.lastCommandMono = nowMs;
-      state.requested = { left: command.left, right: command.right };
+      // Sanitize at intake so kernel state is always finite and in-contract.
+      // Storing a raw NaN or Infinity would leave state that cannot be
+      // serialized, which breaks golden-vector replay against the Python mirror
+      // and would smuggle a non-finite value into the ramp integrator.
+      state.requested = {
+        left: sanitizeIntent(command.left),
+        right: sanitizeIntent(command.right),
+      };
       return;
     }
   }
@@ -432,6 +439,15 @@ function resolveMotors(state: KernelState, nowMs: number, actions: KernelAction[
  */
 function normZero(value: number): number {
   return value === 0 ? 0 : value;
+}
+
+/**
+ * Operator intent is normalized power by contract. Anything else is a protocol
+ * violation, and the safe reading of a violation is the nearest legal value.
+ */
+function sanitizeIntent(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return normZero(Math.max(-1, Math.min(1, value)));
 }
 
 /**

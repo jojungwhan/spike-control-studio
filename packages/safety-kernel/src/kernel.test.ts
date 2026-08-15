@@ -25,6 +25,7 @@ import {
   type RejectReason,
 } from "./kernel.js";
 import { BALANCED_CONFIG, DEMO_CONFIG, PERFORMANCE_CONFIG } from "./profiles.js";
+import { observable } from "./vectors.js";
 
 const SESSION = "session_1";
 const OWNER = "user_owner";
@@ -746,6 +747,32 @@ describe("invariants", () => {
     for (const reason of ["input_released", "emergency_stop", "lease_expired", "transport_down", "latency_exceeded"]) {
       expect(stopCounts[reason] ?? 0, `stop reason never exercised: ${reason}`).toBeGreaterThan(0);
     }
+  });
+
+  it("9. kernel state always survives a JSON round trip", () => {
+    // The Python mirror is kept honest by replaying JSON vectors, so any state
+    // the kernel can reach must be representable in JSON. A stored NaN or
+    // Infinity would serialize to null and silently diverge on replay.
+    fc.assert(
+      fc.property(arbConfig, arbScript, (config, script) => {
+        let state = createInitialState(config, "fuzz", 0);
+        for (const [event, now] of timeline(script)) {
+          state = step(state, event, now).state;
+          for (const value of [
+            state.requested.left,
+            state.requested.right,
+            state.applied.left,
+            state.applied.right,
+          ]) {
+            expect(Number.isFinite(value)).toBe(true);
+            expect(Math.abs(value)).toBeLessThanOrEqual(1);
+          }
+          const snapshot = observable(state);
+          expect(JSON.parse(JSON.stringify(snapshot))).toEqual(snapshot);
+        }
+      }),
+      { numRuns: 300 },
+    );
   });
 
   it("8. a rejected command never becomes operator intent", () => {
