@@ -105,6 +105,10 @@ diverged.
 
 Publishing the web app as a static bundle: see [`deploy/README.md`](deploy/README.md).
 
+Pairing and flashing an actual hub is a separate matter from running this app, and it is covered in
+Korean for instructors — hub pairing, Pybricks installation, voice control, and the safety rules that
+matter in a classroom: [`docs/ko/getting-started.md`](docs/ko/getting-started.md).
+
 ### A note for Linux users
 
 Chrome's Web Bluetooth on Linux is partially implemented and unsupported; it
